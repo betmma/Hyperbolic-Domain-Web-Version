@@ -206,6 +206,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build LOVE package
         uses: ./.github/actions/build-love
         with:
@@ -256,6 +258,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Create AppImage
         uses: ./.github/actions/build-linux
         with:
@@ -330,6 +334,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build Windows
         uses: ./.github/actions/build-windows
         with:
@@ -437,6 +443,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build HTML package
         uses: ./.github/actions/build-html
         with:
@@ -489,6 +497,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build Android
         uses: ./.github/actions/build-android
         with:
@@ -609,6 +619,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build macOS
         uses: ./.github/actions/build-macos
         with:
@@ -680,6 +692,8 @@ jobs:
         uses: ./.github/actions/get-env
         with:
           env_file: game/product.env
+      - name: Rewrite goto-continue
+        run: python3 tools/rewrite_goto_continue.py
       - name: Build iOS
         uses: ./.github/actions/build-ios
         with:

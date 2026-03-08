@@ -1,3 +1,20 @@
+debug logs
+
+generated web build must have these modification:
+
+player.js:
+in Player.runPkgs = function(uri, cache, arg, canvas, ops) {
+first set
+ops.version = '11.5';
+
+search for 
+uri = 'nogame.love';
+change to
+uri = 'game.love';
+
+or, just copy modified player.js into the zip
+
+
 # LÖVE Game Development & Automated Build System
 
 Turn your [LÖVE](https://love2d.org/) game ideas into polished multi-platform releases with this powerful template! Featuring professional IDE integration, automated builds, and everything you need to go from prototype to published game. Built for LÖVE 💕
