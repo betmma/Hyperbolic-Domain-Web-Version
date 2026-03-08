@@ -23,6 +23,15 @@ runs:
   steps:
     - name: Install tools
       uses: ./.github/actions/install-tools
+    - name: Resolve output folder
+      shell: bash
+      run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
+        echo "OUTPUT_FOLDER=${output_folder}" >> $GITHUB_ENV
     - name: Build LOVE package
       uses: ./.github/actions/build-love
       with:
@@ -31,7 +40,7 @@ runs:
         product_name: ${{ inputs.product_name }}
     - shell: bash
       run: |
-        convert ./resources/icon.png -resize 256x256 "${{ inputs.output_folder }}/icon.png"
+        convert ./resources/icon.png -resize 256x256 "${OUTPUT_FOLDER}/icon.png"
         curl -fsSL --retry 5 --retry-delay 15 --connect-timeout 30 --max-time 300 https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -o ./tools/appimagetool.AppImage || exit 1
         curl -fsSL --retry 5 --retry-delay 15 --connect-timeout 30 --max-time 300 https://github.com/love2d/love/releases/download/${{ inputs.love_version }}/love-${{ inputs.love_version }}-x86_64.AppImage -o ./tools/love.AppImage || exit 1
         chmod a+x ./tools/appimagetool.AppImage
@@ -73,25 +82,25 @@ runs:
         echo "Assembling executable..."
         sed -i 's|bin/love|bin/${{ inputs.product_file }}|g' ./tools/squashfs-root/AppRun
         mv -v ./tools/squashfs-root/bin/love ./tools/squashfs-root/bin/${{ inputs.product_file }}
-        dd if=${{ inputs.output_folder }}/${{ inputs.product_file }}.love of=./tools/squashfs-root/bin/${{ inputs.product_file }} obs=1M oflag=append conv=notrunc
+        dd if=${OUTPUT_FOLDER}/${{ inputs.product_file }}.love of=./tools/squashfs-root/bin/${{ inputs.product_file }} obs=1M oflag=append conv=notrunc
         chmod +x ./tools/squashfs-root/bin/${{ inputs.product_file }}
 
-        if [ -f "${{ inputs.output_folder }}/icon.png" ]; then
+        if [ -f "${OUTPUT_FOLDER}/icon.png" ]; then
           echo "Copying icon..."
-          ICON_PATH=$(basename -- "${{ inputs.output_folder }}/icon.png")
+          ICON_PATH=$(basename -- "${OUTPUT_FOLDER}/icon.png")
           mkdir -p ./tools/squashfs-root/share/icons/hicolor/256x256/apps
-          cp ${{ inputs.output_folder }}/icon.png "./tools/squashfs-root/share/icons/hicolor/256x256/apps/${{ inputs.product_file }}.${ICON_PATH##*.}"
-          cp ${{ inputs.output_folder }}/icon.png "./tools/squashfs-root/${{ inputs.product_file }}.${ICON_PATH##*.}"
-          cp ${{ inputs.output_folder }}/icon.png ./tools/squashfs-root/.DirIcon
+          cp ${OUTPUT_FOLDER}/icon.png "./tools/squashfs-root/share/icons/hicolor/256x256/apps/${{ inputs.product_file }}.${ICON_PATH##*.}"
+          cp ${OUTPUT_FOLDER}/icon.png "./tools/squashfs-root/${{ inputs.product_file }}.${ICON_PATH##*.}"
+          cp ${OUTPUT_FOLDER}/icon.png ./tools/squashfs-root/.DirIcon
         fi
 
         if [ "$ACT" == "true" ]; then
-          ./tools/appimagetool.AppImage --appimage-extract-and-run ./tools/squashfs-root ${{ inputs.output_folder }}/${{ inputs.product_file }}.AppImage
+          ./tools/appimagetool.AppImage --appimage-extract-and-run ./tools/squashfs-root ${OUTPUT_FOLDER}/${{ inputs.product_file }}.AppImage
         else
-          ./tools/appimagetool.AppImage ./tools/squashfs-root ${{ inputs.output_folder }}/${{ inputs.product_file }}.AppImage
+          ./tools/appimagetool.AppImage ./tools/squashfs-root ${OUTPUT_FOLDER}/${{ inputs.product_file }}.AppImage
         fi
-        chmod a+x ${{ inputs.output_folder }}/${{ inputs.product_file }}.AppImage
+        chmod a+x ${OUTPUT_FOLDER}/${{ inputs.product_file }}.AppImage
 
         # Create tarball
         mv -v ./tools/squashfs-root/AppRun ./tools/squashfs-root/${{ inputs.product_file }}
-        tar -czf ${{ inputs.output_folder }}/${{ inputs.product_file }}.tar.gz -C ./tools/squashfs-root .
+        tar -czf ${OUTPUT_FOLDER}/${{ inputs.product_file }}.tar.gz -C ./tools/squashfs-root .

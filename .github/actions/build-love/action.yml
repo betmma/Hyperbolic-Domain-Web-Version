@@ -18,6 +18,11 @@ runs:
     - name: Build LOVE package
       shell: bash
       run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
         7z a -tzip -mx=6 -mpass=15 -mtc=off \
-        "${{ inputs.output_folder }}/${{ inputs.product_file }}.love" \
+        "${output_folder}/${{ inputs.product_file }}.love" \
         ./game/* -xr!.gitkeep

@@ -15,6 +15,15 @@ runs:
   steps:
     - name: Install tools
       uses: ./.github/actions/install-tools
+    - name: Resolve output folder
+      shell: bash
+      run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
+        echo "OUTPUT_FOLDER=${output_folder}" >> $GITHUB_ENV
     - name: Build LOVE package
       uses: ./.github/actions/build-love
       with:
@@ -30,11 +39,11 @@ runs:
         sed -i '/<base href="\/play\/">$/d' ./tools/love.js-main/index.html
         sed -i "s/player.min.js/player.min.js?g=game.love/" ./tools/love.js-main/index.html
         convert ./resources/icon.png -define icon:auto-resize="256,128,96,64,48,32,24,16" ./tools/love.js-main/favicon.ico
-        mkdir -p "${{ inputs.output_folder }}/${{ inputs.product_file }}-html"
+        mkdir -p "${OUTPUT_FOLDER}/${{ inputs.product_file }}-html"
         rsync -a --exclude='.htaccess' --exclude='*.git*' --exclude='*.md' --exclude='*.txt' \
           ./tools/love.js-main/ \
-          ${{ inputs.output_folder }}/${{ inputs.product_file }}-html/
-        cp -v ${{ inputs.output_folder }}/${{ inputs.product_file }}.love ${{ inputs.output_folder }}/${{ inputs.product_file }}-html/game.love
+          ${OUTPUT_FOLDER}/${{ inputs.product_file }}-html/
+        cp -v ${OUTPUT_FOLDER}/${{ inputs.product_file }}.love ${OUTPUT_FOLDER}/${{ inputs.product_file }}-html/game.love
         7z a -tzip \
-          "${{ inputs.output_folder }}/${{ inputs.product_file }}-html.zip" \
-          "${{ inputs.output_folder }}/${{ inputs.product_file }}-html"/*
+          "${OUTPUT_FOLDER}/${{ inputs.product_file }}-html.zip" \
+          "${OUTPUT_FOLDER}/${{ inputs.product_file }}-html"/*

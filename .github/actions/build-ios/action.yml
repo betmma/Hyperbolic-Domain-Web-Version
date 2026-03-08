@@ -34,6 +34,15 @@ runs:
   steps:
     - name: Install tools
       uses: ./.github/actions/install-tools
+    - name: Resolve output folder
+      shell: bash
+      run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
+        echo "OUTPUT_FOLDER=${output_folder}" >> $GITHUB_ENV
     - name: Build LOVE package
       uses: ./.github/actions/build-love
       with:
@@ -60,7 +69,7 @@ runs:
       shell: bash
       run: |
         mv -v ./tools/love-apple-dependencies/iOS/libraries ./tools/love/platform/xcode/ios
-        cp -v ./${{ inputs.output_folder }}/${{ inputs.product_file }}.love ./tools/love/platform/xcode/game.love
+        cp -v ./${OUTPUT_FOLDER}/${{ inputs.product_file }}.love ./tools/love/platform/xcode/game.love
     - name: Create iOS icons
       shell: bash
       run: |
@@ -152,7 +161,7 @@ runs:
             -scheme love-ios \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath "${{ inputs.output_folder }}/${{ inputs.product_file }}.xcarchive" \
+            -archivePath "${OUTPUT_FOLDER}/${{ inputs.product_file }}.xcarchive" \
             IPHONEOS_DEPLOYMENT_TARGET=12.0 \
             PRODUCT_BUNDLE_IDENTIFIER="${{ inputs.product_id }}" \
             CODE_SIGN_IDENTITY="" \
@@ -163,7 +172,7 @@ runs:
       shell: bash
       run: |
         # This is a poor emulation of the Xcode export process
-        pushd ${{ inputs.output_folder}}
+        pushd ${OUTPUT_FOLDER}
           mkdir Payload
           cp -r "${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app" Payload/
           zip -r "${{ inputs.product_file }}.ipa" Payload
@@ -172,11 +181,11 @@ runs:
     - name: Validate iOS app
       shell: bash
       run: |
-        md5sum "${{ inputs.output_folder}}/${{ inputs.product_file }}.love"
-        md5sum "${{ inputs.output_folder}}//${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/game.love"
-        plutil -lint "${{ inputs.output_folder}}/${{ inputs.product_file }}.xcarchive/Info.plist"
-        plutil -p "${{ inputs.output_folder}}/${{ inputs.product_file }}.xcarchive/Info.plist"
-        plutil -lint "${{ inputs.output_folder}}/${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/Info.plist"
-        plutil -p "${{ inputs.output_folder}}/${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/Info.plist"
+        md5sum "${OUTPUT_FOLDER}/${{ inputs.product_file }}.love"
+        md5sum "${OUTPUT_FOLDER}//${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/game.love"
+        plutil -lint "${OUTPUT_FOLDER}/${{ inputs.product_file }}.xcarchive/Info.plist"
+        plutil -p "${OUTPUT_FOLDER}/${{ inputs.product_file }}.xcarchive/Info.plist"
+        plutil -lint "${OUTPUT_FOLDER}/${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/Info.plist"
+        plutil -p "${OUTPUT_FOLDER}/${{ inputs.product_file }}.xcarchive/Products/Applications/${{ inputs.product_file }}.app/Info.plist"
         # Summary
-        tree ${{ inputs.output_folder}}
+        tree ${OUTPUT_FOLDER}

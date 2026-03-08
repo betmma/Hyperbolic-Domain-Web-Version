@@ -33,6 +33,15 @@ runs:
       # notarize .dmg
     - name: Install tools
       uses: ./.github/actions/install-tools
+    - name: Resolve output folder
+      shell: bash
+      run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
+        echo "OUTPUT_FOLDER=${output_folder}" >> $GITHUB_ENV
     - name: Build LOVE package
       uses: ./.github/actions/build-love
       with:
@@ -48,7 +57,7 @@ runs:
         rm -rfv ./tools/${{ inputs.product_file }}.app/Contents/Resources/*.icns
     - name: Copy .love game
       shell: bash
-      run: cp -v ./${{ inputs.output_folder }}/*.love ./tools/${{ inputs.product_file }}.app/Contents/Resources/${{ inputs.product_file }}.love
+      run: cp -v ./${OUTPUT_FOLDER}/*.love ./tools/${{ inputs.product_file }}.app/Contents/Resources/${{ inputs.product_file }}.love
     - name: Create ${{ inputs.product_file}}.icns
       shell: bash
       run: |
@@ -160,11 +169,11 @@ runs:
       shell: bash
       run: |
         if command -v ditto >/dev/null 2>&1; then
-          ditto -c -k --keepParent ./tools/${{ inputs.product_file }}.app ${{ inputs.output_folder }}/${{ inputs.product_file }}.app.zip
+          ditto -c -k --keepParent ./tools/${{ inputs.product_file }}.app ${OUTPUT_FOLDER}/${{ inputs.product_file }}.app.zip
         else
-          zip -ry --symlinks ${{ inputs.output_folder }}/${{ inputs.product_file }}.app.zip ./tools/${{ inputs.product_file }}.app
+          zip -ry --symlinks ${OUTPUT_FOLDER}/${{ inputs.product_file }}.app.zip ./tools/${{ inputs.product_file }}.app
         fi
-        tree ${{ inputs.output_folder }}
+        tree ${OUTPUT_FOLDER}
     - name: Create macOS .dmg of .app
       if: runner.os == 'macOS'
       shell: bash
@@ -181,5 +190,5 @@ runs:
           --app-drop-link 600 185 \
           --no-internet-enable \
           --skip-jenkins \
-          ${{ inputs.output_folder }}/${{ inputs.product_file }}.dmg \
+          ${OUTPUT_FOLDER}/${{ inputs.product_file }}.dmg \
           ./tools/${{ inputs.product_file }}.app/

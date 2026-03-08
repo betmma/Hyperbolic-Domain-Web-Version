@@ -11,6 +11,9 @@ permissions:
   pull-requests: read
   issues: read
 
+env:
+  OUTPUT_FOLDER: ./builds
+
 jobs:
   configure:
     name: Configure build

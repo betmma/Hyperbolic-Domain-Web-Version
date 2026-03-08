@@ -55,6 +55,15 @@ runs:
   steps:
     - name: Install tools
       uses: ./.github/actions/install-tools
+    - name: Resolve output folder
+      shell: bash
+      run: |
+        output_folder="$(printf "%s" "${{ inputs.output_folder }}" | tr -d '\r')"
+        if [ -z "${output_folder}" ]; then
+          output_folder="./builds"
+        fi
+        mkdir -p "${output_folder}"
+        echo "OUTPUT_FOLDER=${output_folder}" >> $GITHUB_ENV
     - name: Build LOVE package
       uses: ./.github/actions/build-love
       with:
@@ -92,7 +101,7 @@ runs:
         7z x -o./tools/lzma-sdk/ ./tools/lzma-sdk.7z
     - name: Create .ico icon
       shell: bash
-      run: convert ./resources/icon.png -define icon:auto-resize="256,128,96,64,48,32,24,16" "${{ inputs.output_folder }}/icon.ico"
+      run: convert ./resources/icon.png -define icon:auto-resize="256,128,96,64,48,32,24,16" "${OUTPUT_FOLDER}/icon.ico"
     - name: Resource patch love.exe
       env:
         BUILD_NUM: ${{ inputs.build_num }}
@@ -114,7 +123,7 @@ runs:
             --set-version-string PrivateBuild "${{ inputs.build_num }}" \
             --set-file-version "${{ inputs.build_num }}" \
             --set-product-version "${{ inputs.product_version }}" \
-            --set-icon "${{ inputs.output_folder }}/icon.ico"
+            --set-icon "${OUTPUT_FOLDER}/icon.ico"
         done
     - name: Create fused executables
       shell: bash
@@ -123,14 +132,14 @@ runs:
           mkdir -p ./tools/build/$ARCH/
           cp ./tools/love-$ARCH/* ./tools/build/$ARCH/
           mv -v ./tools/build/$ARCH/love.exe ./tools/build/$ARCH/${{ inputs.product_file }}.exe
-          dd if=${{ inputs.output_folder }}/${{ inputs.product_file }}.love of=./tools/build/$ARCH/${{ inputs.product_file }}.exe obs=1M oflag=append conv=notrunc
+          dd if=${OUTPUT_FOLDER}/${{ inputs.product_file }}.love of=./tools/build/$ARCH/${{ inputs.product_file }}.exe obs=1M oflag=append conv=notrunc
         done
     - name: Create Windows .zip files
       if: ${{ inputs.build_type == 'release' && inputs.target_windows_zip == 'true' }}
       shell: bash
       run: |
         for ARCH in win64; do
-          7z a -tzip -mx=9 -mfb=273 -mpass=15 -mtc=off ${{ inputs.output_folder }}/${{ inputs.product_file }}.zip ./tools/build/$ARCH/*
+          7z a -tzip -mx=9 -mfb=273 -mpass=15 -mtc=off ${OUTPUT_FOLDER}/${{ inputs.product_file }}.zip ./tools/build/$ARCH/*
         done
     # https://gist.github.com/drewchapin/246de6d0c404a79ee66a5ead35b480bc
     # https://github.com/AnonymerNiklasistanonym/NsiWindowsInstallerExamples/blob/main/example_02_license_uninstaller_components/windows_installer.nsi
@@ -169,7 +178,7 @@ runs:
         ;-------------------------------------------------------------------------------
         ; Attributes
         Name "${PRODUCT_NAME}"
-        OutFile "${{ inputs.output_folder }}/${PRODUCT_FILE}-installer.exe"
+        OutFile "__OUTPUT_FOLDER__/${PRODUCT_FILE}-installer.exe"
         InstallDir "${PRODUCT_DIR}"
         InstallDirRegKey HKCU "Software\${PRODUCT_COMPANY}\${PRODUCT_NAME}" ""
         RequestExecutionLevel user ; user|highest|admin
@@ -190,8 +199,8 @@ runs:
         !define MUI_WELCOMEPAGE_TEXT "${PRODUCT_COMPANY} presents ${PRODUCT_NAME}. ${PRODUCT_DESCRIPTION}. ${PRODUCT_COPYRIGHT}."
         !define MUI_PAGE_HEADER_TEXT "Install ${PRODUCT_NAME} by ${PRODUCT_COMPANY}"
         !define MUI_PAGE_HEADER_SUBTEXT "${PRODUCT_NAME} v${PRODUCT_VERSION} (${BUILD_VERSION})"
-        !define MUI_ICON "${{ inputs.output_folder }}/icon.ico"
-        !define MUI_UNICON "${{ inputs.output_folder }}/icon.ico"
+        !define MUI_ICON "__OUTPUT_FOLDER__/icon.ico"
+        !define MUI_UNICON "__OUTPUT_FOLDER__/icon.ico"
         !define MUI_UNWELCOMEPAGE_TITLE "${PRODUCT_NAME} Uninstall"
         !define MUI_UNWELCOMEPAGE_TEXT "This wizard will guide you through the uninstallation of ${PRODUCT_NAME}. Click Next to continue."
         ;-------------------------------------------------------------------------------
@@ -254,6 +263,7 @@ runs:
           RMDir "$INSTDIR"
         SectionEnd
         EOF
+        sed -i "s|__OUTPUT_FOLDER__|${OUTPUT_FOLDER}|g" installer.nsi
         makensis installer.nsi
 
     - name: Create Windows SFX file
@@ -264,7 +274,7 @@ runs:
         WINEDEBUG: "-all"  # Disable WINE debug output
       shell: bash
       run: |
-        SFX_EXE="${{ inputs.output_folder }}/${{ inputs.product_file }}.exe"
+        SFX_EXE="${OUTPUT_FOLDER}/${{ inputs.product_file }}.exe"
         # Create 7z archive of the game
         mkdir -p ./tools/build/sfx
         7z a -mx=5 -m0=BCJ -m1=LZMA2 ./tools/build/sfx/${{ inputs.product_file }}.7z ./tools/build/win64/*
@@ -294,4 +304,4 @@ runs:
           --set-version-string PrivateBuild "${{ inputs.build_num }}" \
           --set-file-version "${{ inputs.build_num }}" \
           --set-product-version "${{ inputs.product_version }}" \
-          --set-icon "${{ inputs.output_folder }}/icon.ico"
+          --set-icon "${OUTPUT_FOLDER}/icon.ico"
