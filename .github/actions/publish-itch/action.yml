@@ -57,10 +57,15 @@ runs:
         if [ "${{ runner.os }}" = "Windows" ]; then
           BUTLER_EXEC="butler.exe"
         fi
+        itch_user="$(printf "%s" "${{ inputs.itch_user }}" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        itch_game="$(printf "%s" "${{ inputs.itch_game }}" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        channel="$(printf "%s" "${{ inputs.channel }}" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        package_path="$(printf "%s" "${{ inputs.package }}" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
         versionArgument=""
         if [ -n "${{ inputs.version }}" ]; then
           versionArgument="--userversion ${{ inputs.version }}"
         fi
+        target="${itch_user}/${itch_game}:${channel}"
         ./tools/${BUTLER_EXEC} push \
-          "${{ inputs.package }}" \
-          ${{ inputs.itch_user }}/${{ inputs.itch_game }}:${{ inputs.channel }} ${versionArgument}
+          "${package_path}" \
+          "${target}" ${versionArgument}
